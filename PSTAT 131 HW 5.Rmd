@@ -1,0 +1,70 @@
+---
+title: "PSTAT 131 HW 5"
+author: "Raymond Lee"
+date: '2022-05-11'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidymodels)
+tidymodels_prefer()
+library(tidyverse)
+library(janitor)
+```
+
+1. 
+```{r}
+pokemon = read.csv("pokemon.csv")
+pokemon = clean_names(pokemon)
+pokemon
+```
+
+The names of the data frame were cleaned, resulting in names that are unique and consist of only underscores, numbers, and letters. This makes it easier to work with the dataset because we do not have to manually clean each column name, and the names are easier to read, recognize, and access. 
+
+2. 
+```{r}
+ggplot(pokemon, aes(x=fct_infreq(type_1))) + geom_bar() + labs(x = 'Type 1')
+```
+
+```{r}
+n_distinct(pokemon['type_1'])
+```
+
+There are 18 type 1s. Fairy and flying types have the least amount of pokemon. 
+
+```{r}
+pokemon = filter(pokemon, type_1 == 'Bug' | type_1 == 'Fire' | type_1 == 'Grass' | type_1 == 'Normal' | 
+                   type_1 == 'Water' | type_1 == 'Psychic')
+pokemon$type_1 = factor(pokemon$type_1, levels = c('Bug', 'Fire', 'Grass', 'Normal', 'Water', 'Psychic'))
+pokemon$legendary = factor(pokemon$legendary, levels = c('True', 'False'))
+```
+
+3. 
+```{r}
+set.seed(1114)
+pokemon_split = initial_split(pokemon, prop = .70, strata = type_1)
+pokemon_train = training(pokemon_split)
+pokemon_test = testing(pokemon_split)
+
+pokemon_folds = vfold_cv(pokemon_train, v = 5, strata = type_1)
+```
+
+Stratifying the folds may be useful when there is an unbalanced amount of data available for each level of a variable. This ensures that the folds are similar to each other in terms of the kinds of data that they consist of. 
+
+4. 
+```{r}
+pokemon_recipe = recipe(type_1 ~ legendary + generation + sp_atk + attack + speed + defense + 
+                          hp + sp_def, data = pokemon_train) %>% 
+  step_dummy(legendary, generation) %>% 
+  step_normalize(all_predictors())
+```
+
+5.
+```{r}
+
+```
+
