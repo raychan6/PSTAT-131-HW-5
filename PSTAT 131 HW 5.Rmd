@@ -14,6 +14,7 @@ library(tidymodels)
 tidymodels_prefer()
 library(tidyverse)
 library(janitor)
+library(glmnet)
 ```
 
 1. 
@@ -59,12 +60,63 @@ Stratifying the folds may be useful when there is an unbalanced amount of data a
 ```{r}
 pokemon_recipe = recipe(type_1 ~ legendary + generation + sp_atk + attack + speed + defense + 
                           hp + sp_def, data = pokemon_train) %>% 
-  step_dummy(legendary, generation) %>% 
+  step_dummy(all_nominal_predictors()) %>% 
   step_normalize(all_predictors())
 ```
 
 5.
 ```{r}
+elastic_net = multinom_reg(penalty = tune(), mixture = tune()) %>% 
+  set_mode('classification') %>% 
+  set_engine('glmnet')
 
+en_wf = workflow() %>% 
+  add_recipe(pokemon_recipe) %>% 
+  add_model(elastic_net)
+
+en_grid = grid_regular(penalty(range = c(-5, 5)), mixture(range = c(0, 1)), levels = 10)
 ```
+
+We will be fitting 500 models to the folded data. 
+
+6.
+```{r}
+tune_res = tune_grid(en_wf, resamples = pokemon_folds, grid = en_grid)
+autoplot(tune_res)
+```
+
+Smaller values of penalty and mixture produce better accuracy and ROC/AUC. 
+
+7. 
+```{r}
+best_model = select_best(tune_res, metric = 'roc_auc')
+en_final = finalize_workflow(en_wf, best_model)
+en_final_fit = fit(en_final, data = pokemon_train)
+predicted_data = augment(en_final_fit, new_data = pokemon_test) %>% 
+  select(type_1, starts_with('.pred'))
+```
+
+8.
+```{r}
+predicted_data %>% roc_auc(type_1, .pred_Bug:.pred_Psychic)
+predicted_data %>% roc_curve(type_1, .pred_Bug:.pred_Psychic) %>% 
+  autoplot()
+```
+
+```{r}
+predicted_data %>% conf_mat(truth = type_1, estimate = .pred_class) %>% 
+  autoplot(type = 'heatmap')
+```
+
+The model predicts normal types the best, but it predicts fire types the worst. Perhaps normal types have certain stats that are significantly different from other types in general while fire types have certain stats that are extremely similar to other types. It also seems like that the model tends to predict the type to be water regardless of the predictors. 
+
+
+
+# elastic net: combination of ridge and lasso
+# range of penalties/norms that can be used
+# mixture represents proportion of lasso and ridge penalty
+
+#tuning: finding best value for input (like lambda)
+
+#tune_grid tries out values for tuning 
 
