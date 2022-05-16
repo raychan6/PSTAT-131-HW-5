@@ -21,7 +21,6 @@ library(glmnet)
 ```{r}
 pokemon = read.csv("pokemon.csv")
 pokemon = clean_names(pokemon)
-pokemon
 ```
 
 The names of the data frame were cleaned, resulting in names that are unique and consist of only underscores, numbers, and letters. This makes it easier to work with the dataset because we do not have to manually clean each column name, and the names are easier to read, recognize, and access. 
@@ -112,11 +111,13 @@ The model predicts normal types the best, but it predicts fire types the worst. 
 
 
 
-# elastic net: combination of ridge and lasso
-# range of penalties/norms that can be used
-# mixture represents proportion of lasso and ridge penalty
+```{r}
+#elastic net: combination of ridge and lasso
+#range of penalties/norms that can be used
+#mixture represents proportion of lasso and ridge penalty
 
 #tuning: finding best value for input (like lambda)
 
 #tune_grid tries out values for tuning 
+```
 
